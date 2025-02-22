@@ -1,11 +1,11 @@
 import { User } from "../models/user.model.js";
 
 const registerUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { fullname, email, password } = req.body;
 
   try {
     if (
-      [email, password].some((field) => {
+      [fullname,email, password].some((field) => {
         field?.trim() === "";
       })
     ) {
@@ -19,6 +19,7 @@ const registerUser = async (req, res) => {
     }
 
     const newUser = await User({
+      fullname,
       email,
       password,
     });
@@ -30,6 +31,7 @@ const registerUser = async (req, res) => {
     res.status(201).json({
       message: "User created successfully",
       user: {
+        fullname: newUser.fullname,
         email: newUser.email,
         // password: newUser.password,
       },
