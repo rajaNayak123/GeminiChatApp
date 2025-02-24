@@ -104,4 +104,14 @@ const profileUser = (req, res) => {
    });
 };
 
-export {registerUser,loginUser,logoutUser,profileUser};
+const getAllUsers = async (req, res) => {
+  const userId = req.user._id
+  // Get all users those have not logged in
+  const users = await User.find({
+    id: {$ne:userId}
+  })
+
+  return res.status(200).json({users:users});
+}
+
+export {registerUser,loginUser,logoutUser,profileUser,getAllUsers};

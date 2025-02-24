@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Project } from "../models/project.model.js";
 
+
 const createPorject = async (req, res) => {
   const { name } = req.body;
   const userId = req.user._id;
@@ -57,8 +58,11 @@ const getAllProjects = async (req, res) => {
 };
 
 const addUserToProject = async (req, res) => {
+    const { projectId, users } = req.body;
+    const userId = req.user._id;
+    console.log(userId);
+
     try {
-      const { projectId, users, userId } = req.body;
       
       if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
         return res.status(400).json({ message: "Invalid or missing projectId" });
@@ -70,14 +74,16 @@ const addUserToProject = async (req, res) => {
         return res.status(400).json({ message: "Invalid userId(s) in users array" });
       }
   
-      const project = await projectModel.findOne({ _id: projectId, users: userId });
+      const project = await Project.findOne({ _id: projectId, users: userId });
+
       if (!project) {
         return res.status(403).json({ message: "User not authorized for this project" });
       }
   
-      const updatedProject = await projectModel.findByIdAndUpdate(
+      const updatedProject = await Project.findByIdAndUpdate(
         projectId,
         { $addToSet: { users: { $each: users } } },
+        userId,
         { new: true }
       );
   
@@ -88,8 +94,25 @@ const addUserToProject = async (req, res) => {
     }
 };
 
+const getOneProject = async (req,res) =>{
+  const {projectId} = req.params;
+
+  try {
+    if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(400).json({ message: "Invalid or missing projectId" });
+    }
+  
+    const project = await Project.findOne({_id: projectId}).populate('users');
+  
+    return res.status(200).json({project});
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({message:error.message})
+  }
+}
 export { 
     createPorject, 
     getAllProjects, 
-    addUserToProject 
+    addUserToProject,
+    getOneProject
 };
