@@ -43,14 +43,17 @@ const createPorject = async (req, res) => {
 const getAllProjects = async (req, res) => {
   const userId = req.user._id;
 
+  console.log("userId: " + userId);
+
   try {
-    if (!userId) {
-      res.status(404).json({ error: "UserId is required" });
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid or missing userId" });
     }
 
     const allProjects = await Project.find({ users: userId });
 
-    return res.status(200).json({ projects: allProjects });
+    // console.log(allProjects);
+    return res.status(200).json( allProjects );
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "error while getting all project" });
