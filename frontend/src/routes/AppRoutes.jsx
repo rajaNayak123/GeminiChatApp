@@ -4,6 +4,7 @@ import UserLogin from "../pages/UserLogin";
 import UserRegister from "../pages/UserRegister";
 import UserLogout from "../pages/UserLogout";
 import Home from "../pages/Home";
+import Project from "../pages/Project";
 const AppRoutes = () => {
   return (
     <BrowserRouter>
@@ -12,6 +13,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<UserLogin/>} />
         <Route path="/register" element={<UserRegister/>} />
         <Route path="/logout" element={<UserLogout/>} />
+        <Route path="/project" element={<Project/>} />
       </Routes>
     </BrowserRouter>
   );
