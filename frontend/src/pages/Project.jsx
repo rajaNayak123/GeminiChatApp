@@ -1,15 +1,50 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import axios from "axios";
 const Project = () => {
   const location = useLocation();
   console.log(location.state);
 
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  const handleUserClick = (id) => {
+    setSelectedUserId([...selectedUserId, id]);
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    axios
+      .get(`${import.meta.env.VITE_BASE_URL}/users/allUsers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        console.log(res.data);
+        setUsers(res.data.users || []);
+      })
+      .catch((err) => console.error("Error fetching projects:", err));
+  }, []);
+
   return (
-    <main className="h-screen w-screen flex">
+    <main
+      className={`h-screen w-screen flex ${
+        isModalOpen ? "overflow-hidden" : ""
+      }`}
+    >
       <section className="left relative flex flex-col h-screen min-w-96 bg-slate-300">
-        <header className="flex justify-between items-center p-2 px-4 w-full bg-slate-100 absolute z-10 top-0">
-          <button className="flex gap-2">
+        <header
+          className={`flex justify-between items-center p-2 px-4 w-full bg-slate-100 absolute z-10 top-0 transition-all ${
+            isModalOpen ? "hidden" : ""
+          }`}
+        >
+          <button
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
+            className="flex gap-2 cursor-pointer"
+          >
             <i className="ri-add-fill mr-1"></i>
             <p>Add collaborator</p>
           </button>
@@ -21,7 +56,7 @@ const Project = () => {
           </button>
         </header>
 
-        <div className="conversation-area pt-14 pb-10 flex-grow flex flex-col h-full relative">
+        <div className="conversation-area mt-3 pt-14 pb-10 flex-grow flex flex-col h-full relative">
           <div className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide">
             <div className="message flex flex-col p-2 bg-slate-50 w-fit rounded-md">
               <small className="opacity-65 text-xs">test@gmail.com</small>
@@ -68,6 +103,40 @@ const Project = () => {
           </div>
         </div>
       </section>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-md w-96 max-w-full relative">
+            <header className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Select User</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2">
+                <i className="ri-close-fill text-2xl cursor-pointer"></i>
+              </button>
+            </header>
+            <div className="users-list flex flex-col gap-2 mb-16 max-h-96 overflow-auto">
+              {users.map((user) => (
+                <div
+                  key={user._id}
+                  className={`user cursor-pointer rounded-2xl hover:bg-slate-200 ${
+                    selectedUserId.indexOf(user._id) != -1 ? "bg-slate-200" : ""
+                  } p-2 flex gap-2 items-center`}
+                  onClick={() => {
+                    handleUserClick(user._id);
+                  }}
+                >
+                  <div className="aspect-square relative rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600">
+                    <i className="ri-user-fill absolute"></i>
+                  </div>
+                  <h1 className="font-semibold text-lg">{user.email}</h1>
+                </div>
+              ))}
+            </div>
+            <button className="absolute cursor-pointer bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-blue-600 text-white rounded-md">
+              Add Collaborators
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
