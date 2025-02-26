@@ -3,30 +3,76 @@ import { useLocation } from "react-router-dom";
 import axios from "axios";
 const Project = () => {
   const location = useLocation();
-  console.log(location.state);
+  // console.log(location.state);
 
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState(new Set());
+  const [project, setProject] = useState(location.state.project);
   const [users, setUsers] = useState([]);
 
   const handleUserClick = (id) => {
-    setSelectedUserId([...selectedUserId, id]);
+    // setSelectedUserId([...selectedUserId, id]);
+    setSelectedUserId((prevSelectedUserId) => {
+      const newSelectedUserId = new Set(prevSelectedUserId);
+      if (newSelectedUserId.has(id)) {
+        newSelectedUserId.delete(id);
+      } else {
+        newSelectedUserId.add(id);
+      }
+
+      return newSelectedUserId;
+    });
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     axios
+      .get(
+        `${import.meta.env.VITE_BASE_URL}/projects/getOneProject/:${
+          location.state.project._id
+        }`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      .then((res) => {
+        console.log(res.data);
+        setProject(res.data);
+      });
+
+    axios
       .get(`${import.meta.env.VITE_BASE_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        console.log(res.data);
+        // console.log(res.data);
         setUsers(res.data.users || []);
       })
       .catch((err) => console.error("Error fetching projects:", err));
   }, []);
 
+  function addCollaborators() {
+    const token = localStorage.getItem("token");
+    axios
+      .put(
+        `${import.meta.env.VITE_BASE_URL}/projects/add-user-to-project`,
+        {
+          projectId: location.state.project._id,
+          users: Array.from(selectedUserId),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      .then((res) => {
+        console.log(res.data);
+        setIsModalOpen(false);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
   return (
     <main
       className={`h-screen w-screen flex ${
@@ -90,17 +136,24 @@ const Project = () => {
               onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
               className="p-2 cursor-pointer"
             >
-              <i className="ri-close-fill"></i>
+              <i className="ri-close-fill text-2xl"></i>
             </button>
           </header>
-          <div className="users flex flex-col gap-2">
-            <div className="user cursor-pointer hover:bg-slate-200 p-2 ml-3 mt-2 rounded-2xl w-90 flex gap-2 items-center">
-              <div className="aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600">
-                <i className="ri-user-fill absolute"></i>
+          {project?.users && project.users.length > 0 ? (
+            users.map((user) => (
+              <div
+                key={user._id}
+                className="user cursor-pointer hover:bg-slate-200 p-2 ml-3 mt-2 rounded-2xl w-90 flex gap-2 items-center"
+              >
+                <div className="aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600">
+                  <i className="ri-user-fill absolute"></i>
+                </div>
+                <h1 className="font-semibold text-lg">{user.email}</h1>
               </div>
-              <h1 className="font-semibold text-lg">@gmail.com</h1>
-            </div>
-          </div>
+            ))
+          ) : (
+            <p className="p-2 text-gray-500">No collaborators yet.</p>
+          )}
         </div>
       </section>
 
@@ -118,7 +171,9 @@ const Project = () => {
                 <div
                   key={user._id}
                   className={`user cursor-pointer rounded-2xl hover:bg-slate-200 ${
-                    selectedUserId.indexOf(user._id) != -1 ? "bg-slate-200" : ""
+                    Array.from(selectedUserId).indexOf(user._id) != -1
+                      ? "bg-slate-200"
+                      : ""
                   } p-2 flex gap-2 items-center`}
                   onClick={() => {
                     handleUserClick(user._id);
@@ -131,7 +186,10 @@ const Project = () => {
                 </div>
               ))}
             </div>
-            <button className="absolute cursor-pointer bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-blue-600 text-white rounded-md">
+            <button
+              onClick={addCollaborators}
+              className="absolute cursor-pointer bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-blue-600 text-white rounded-md"
+            >
               Add Collaborators
             </button>
           </div>
