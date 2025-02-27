@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import { initializeSocket, receiveMessage, sendMessage } from "../utils/socket.js";
 const Project = () => {
   const location = useLocation();
   // console.log(location.state);
@@ -26,6 +27,9 @@ const Project = () => {
   };
 
   useEffect(() => {
+    
+    initializeSocket()
+
     const token = localStorage.getItem("token");
     axios
       .get(
