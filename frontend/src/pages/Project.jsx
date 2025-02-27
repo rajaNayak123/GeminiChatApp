@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { initializeSocket, receiveMessage, sendMessage } from "../utils/socket.js";
+import {userDataContext} from '../context/UserContext.jsx'
 const Project = () => {
   const location = useLocation();
   // console.log(location.state);
@@ -11,6 +12,8 @@ const Project = () => {
   const [selectedUserId, setSelectedUserId] = useState(new Set());
   const [project, setProject] = useState(location.state.project);
   const [users, setUsers] = useState([]);
+  const [message, setMessage] = useState("")
+  const {user} = useContext(userDataContext);
 
   const handleUserClick = (id) => {
     // setSelectedUserId([...selectedUserId, id]);
@@ -28,25 +31,26 @@ const Project = () => {
 
   useEffect(() => {
     
-    initializeSocket()
+    initializeSocket(project._id)
+
+    receiveMessage('project-message', data =>{
+      console.log(data);
+    })
 
     const token = localStorage.getItem("token");
-    axios
-      .get(
-        `${import.meta.env.VITE_BASE_URL}/projects/getOneProject/:${
+    axios.get(
+        `${import.meta.env.VITE_BASE_URL}/projects/getOneProject/${
           location.state.project._id
         }`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
-      )
-      .then((res) => {
+      ).then((res) => {
         console.log(res.data);
         setProject(res.data);
       });
 
-    axios
-      .get(`${import.meta.env.VITE_BASE_URL}/users/allUsers`, {
+    axios.get(`${import.meta.env.VITE_BASE_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -76,6 +80,15 @@ const Project = () => {
       .catch((err) => {
         console.log(err);
       });
+  }
+
+  function messaSend(e){
+    e.preventDefault()
+    sendMessage("project-message",{
+      message,
+      sender: user._id
+    })
+    setMessage(" ")
   }
   return (
     <main
@@ -120,10 +133,12 @@ const Project = () => {
           <div className="inputField w-full gap-1 flex absolute bottom-2">
             <input
               type="text"
+              value={message}
+              onChange={(e)=>{setMessage(e.target.value)}}
               className="p-2 px-4 border rounded outline-none ml-2 w-full"
               placeholder="Enter message"
             />
-            <button className="px-5 cursor-pointer rounded bg-slate-950 text-white">
+            <button onClick={messaSend} className="px-5 cursor-pointer rounded bg-slate-950 text-white">
               <i className="ri-send-plane-fill"></i>
             </button>
           </div>
