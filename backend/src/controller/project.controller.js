@@ -105,12 +105,16 @@ const getOneProject = async (req,res) =>{
       return res.status(400).json({ message: "Invalid or missing projectId" });
     }
   
-    const project = await Project.findOne({_id: projectId}).populate('users');
+    const project = await Project.findById({_id: projectId}).populate('users');
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
   
-    return res.status(200).json({project});
+    return res.status(200).json(project);
   } catch (error) {
-    console.log(error);
-    res.status(400).json({message:error.message})
+    console.error("Error fetching one project:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 }
 export { 
