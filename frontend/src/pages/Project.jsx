@@ -1,8 +1,12 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
-import { initializeSocket, receiveMessage, sendMessage } from "../utils/socket.js";
-import {userDataContext} from '../context/UserContext.jsx'
+import {
+  initializeSocket,
+  receiveMessage,
+  sendMessage,
+} from "../utils/socket.js";
+import { userDataContext } from "../context/UserContext.jsx";
 const Project = () => {
   const location = useLocation();
   // console.log(location.state);
@@ -12,8 +16,8 @@ const Project = () => {
   const [selectedUserId, setSelectedUserId] = useState(new Set());
   const [project, setProject] = useState(location.state.project);
   const [users, setUsers] = useState([]);
-  const [message, setMessage] = useState("")
-  const {user} = useContext(userDataContext);
+  const [message, setMessage] = useState("");
+  const { user } = useContext(userDataContext);
 
   const handleUserClick = (id) => {
     // setSelectedUserId([...selectedUserId, id]);
@@ -30,27 +34,42 @@ const Project = () => {
   };
 
   useEffect(() => {
-    
-    initializeSocket(project._id)
+    initializeSocket(project._id);
+   
 
-    receiveMessage('project-message', data =>{
-      console.log(data);
-    })
+    receiveMessage("project-message", (data) => {
+      console.log("🔵 New message:", data);
+  });
 
     const token = localStorage.getItem("token");
-    axios.get(
+
+    if (!location?.state?.project?._id) {
+      console.error("Project ID is missing");
+      return;
+    }
+
+    axios
+      .get(
         `${import.meta.env.VITE_BASE_URL}/projects/getOneProject/${
           location.state.project._id
         }`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
-      ).then((res) => {
-        console.log(res.data);
-        setProject(res.data);
+      )
+      .then((res) => {
+        if (res.data) {
+          setProject(res.data);
+        } else {
+          console.error("No project data found:", res.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching project:", error);
       });
 
-    axios.get(`${import.meta.env.VITE_BASE_URL}/users/allUsers`, {
+    axios
+      .get(`${import.meta.env.VITE_BASE_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -58,7 +77,7 @@ const Project = () => {
         setUsers(res.data.users || []);
       })
       .catch((err) => console.error("Error fetching projects:", err));
-  }, []);
+  }, [project._id]);
 
   function addCollaborators() {
     const token = localStorage.getItem("token");
@@ -82,14 +101,15 @@ const Project = () => {
       });
   }
 
-  function messaSend(e){
-    e.preventDefault()
-    sendMessage("project-message",{
+  function messaSend(e) {
+    e.preventDefault();
+    sendMessage("project-message", {
       message,
-      sender: user._id
-    })
-    setMessage(" ")
+      sender: user._id,
+    });
+    setMessage("");
   }
+
   return (
     <main
       className={`h-screen w-screen flex ${
@@ -134,11 +154,16 @@ const Project = () => {
             <input
               type="text"
               value={message}
-              onChange={(e)=>{setMessage(e.target.value)}}
+              onChange={(e) => {
+                setMessage(e.target.value);
+              }}
               className="p-2 px-4 border rounded outline-none ml-2 w-full"
               placeholder="Enter message"
             />
-            <button onClick={messaSend} className="px-5 cursor-pointer rounded bg-slate-950 text-white">
+            <button
+              onClick={messaSend}
+              className="px-5 cursor-pointer rounded bg-slate-950 text-white"
+            >
               <i className="ri-send-plane-fill"></i>
             </button>
           </div>
@@ -158,10 +183,10 @@ const Project = () => {
               <i className="ri-close-fill text-2xl"></i>
             </button>
           </header>
-          {project?.users && project.users.length > 0 ? (
+          {project?.users?.length > 0 ? (
             users.map((user) => (
               <div
-                key={user._id}
+                key={user.id}
                 className="user cursor-pointer hover:bg-slate-200 p-2 ml-3 mt-2 rounded-2xl w-90 flex gap-2 items-center"
               >
                 <div className="aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600">
