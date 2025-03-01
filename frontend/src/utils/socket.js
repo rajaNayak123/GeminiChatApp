@@ -4,6 +4,8 @@ let socketInstance = null; // represents the connection between server and clien
 
 export const initializeSocket = (projectId) => {
 
+    if (socketInstance) return socketInstance; // to prevent multiple instances
+
     // console.log(projectId);
     socketInstance = socket(import.meta.env.VITE_BASE_URL,{
         // for authentication

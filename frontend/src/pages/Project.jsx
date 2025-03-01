@@ -18,6 +18,7 @@ const Project = () => {
   const [users, setUsers] = useState([]);
   const [message, setMessage] = useState("");
   const { user } = useContext(userDataContext);
+  const messageBox = React.createRef();
 
   const handleUserClick = (id) => {
     // setSelectedUserId([...selectedUserId, id]);
@@ -35,11 +36,13 @@ const Project = () => {
 
   useEffect(() => {
     initializeSocket(project._id);
-   
 
     receiveMessage("project-message", (data) => {
       console.log("🔵 New message:", data);
-  });
+      if (data && data.message && data.sender) {
+        appendIncomingMessage(data);
+      }
+    });
 
     const token = localStorage.getItem("token");
 
@@ -77,6 +80,10 @@ const Project = () => {
         setUsers(res.data.users || []);
       })
       .catch((err) => console.error("Error fetching projects:", err));
+
+    return () => {
+      socket.off("project-message"); // Clean up when component unmounts
+    };
   }, [project._id]);
 
   function addCollaborators() {
@@ -103,11 +110,75 @@ const Project = () => {
 
   function messaSend(e) {
     e.preventDefault();
+
+    if (!message.trim()) return;
+
     sendMessage("project-message", {
       message,
-      sender: user._id,
+      // sender: { email: user.email },
+      sender: {
+        id: user?._id, // Ensure user ID is sent
+        email: user?.email, // Ensure email is included
+      },
     });
+
+    // sendMessage("project-message", messageData);
+    appendOutgoingMessage(message);
+
     setMessage("");
+  }
+
+  function appendIncomingMessage(messageObject) {
+    console.log("Appending Incoming Message:", messageObject);
+
+    if (!messageObject.message) return; // Prevent undefined messages
+
+    const messageBox = document.querySelector(".message-box");
+    const message = document.createElement("div");
+    message.classList.add(
+      "message",
+      "max-w-56",
+      "flex",
+      "flex-col",
+      "p-2",
+      "bg-slate-50",
+      "w-fit",
+      "rounded-md"
+    );
+
+    message.innerHTML = `<small class='opacity-65 text-xs'>
+        ${messageObject.sender?.email || "Unknown"}
+      </small>
+      <p class='text-sm'>${messageObject.message || "No message content"}</p>`;
+
+    messageBox.appendChild(message);
+  }
+
+  function appendOutgoingMessage(messageObject) {
+    console.log("Appending Outgoing Message:", messageObject);
+
+    if (!messageObject.message) return; // Prevent undefined messages
+
+    const messageBox = document.querySelector(".message-box");
+    const message = document.createElement("div");
+    message.classList.add(
+      "message",
+      "ml-auto",
+      "max-w-56",
+      "flex",
+      "flex-col",
+      "p-2",
+      "bg-slate-50",
+      "w-fit",
+      "rounded-md"
+    );
+
+    message.innerHTML = `<small class='opacity-65 text-xs'>
+      ${messageObject.sender?.email || "Unknown"}
+    </small>
+    <p class='text-sm'>${messageObject.message || "No message content"}</p>`;
+
+    messageBox.appendChild(message);
   }
 
   return (
@@ -140,7 +211,10 @@ const Project = () => {
         </header>
 
         <div className="conversation-area mt-3 pt-14 pb-10 flex-grow flex flex-col h-full relative">
-          <div className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide">
+          <div
+            ref={messageBox}
+            className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide"
+          >
             <div className="message flex flex-col p-2 bg-slate-50 w-fit rounded-md">
               <small className="opacity-65 text-xs">test@gmail.com</small>
               <p>hello world lorem</p>
@@ -169,6 +243,7 @@ const Project = () => {
           </div>
         </div>
 
+        {/* side panel */}
         <div
           className={`sidePanel w-full h-[calc(100%-52px)] flex flex-col gap-2 bg-slate-50 absolute transition-all ${
             isSidePanelOpen ? "translate-x-0" : "-translate-x-full"
